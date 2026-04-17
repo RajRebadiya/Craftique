@@ -1,0 +1,80 @@
+#order deny,allow
+#deny from all
+#allow from 85.72.33.68
+#allow from 145.224.119.171
+
+RewriteEngine On
+
+# Coming soon mode only for storefront pages.
+# Allow admin/login/static resources for all IPs.
+RewriteCond %{REQUEST_URI} !^/coming-soon\.html$ [NC]
+RewriteCond %{REQUEST_URI} !^/admin(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/users/login(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/seller/login(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/deliveryboy/login(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/login(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/logout(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/password(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/aiz-uploader(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/subcategories(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/subsubcategories(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/home_categories(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/refresh-csrf$ [NC]
+RewriteCond %{REQUEST_URI} !^/assets/ [NC]
+RewriteCond %{REQUEST_URI} !^/public/assets/ [NC]
+RewriteCond %{REQUEST_URI} !^/uploads/ [NC]
+RewriteCond %{REQUEST_URI} !^/storage/ [NC]
+RewriteCond %{REQUEST_URI} !^/vendor/ [NC]
+RewriteCond %{REQUEST_URI} !^/favicon\.ico$ [NC]
+RewriteCond %{REQUEST_URI} !^/robots\.txt$ [NC]
+#RewriteCond %{REMOTE_ADDR} !^(94\.70\.134\.181|109\.178\.26\.224)$
+RewriteCond %{REMOTE_ADDR} !^(94\.70\.134\.181|109\.178\.26\.224|116\.72\.19\.10|103\.240\.78\.206)$
+#RewriteRule ^ /coming-soon.html [R=302,L]
+
+
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Handle Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Disable index view
+Options -Indexes
+
+# Hide a specific file
+<Files ~ "\.(env|json|config.js|md|gitignore|gitattributes|lock)$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+## EXPIRES CACHING ##
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType text/x-javascript "access plus 1 month"
+    ExpiresByType application/x-shockwave-flash "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresDefault "access plus 1 days"
+</IfModule>
+

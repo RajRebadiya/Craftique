@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Client Change Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.55;
+            color: #222;
+            margin: 40px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        h2 {
+            font-size: 18px;
+            margin-top: 28px;
+            margin-bottom: 10px;
+        }
+        p, li {
+            font-size: 14px;
+        }
+        ul {
+            margin-top: 8px;
+        }
+        .muted {
+            color: #666;
+            font-size: 13px;
+        }
+        .section {
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Client Change Report</h1>
+    <p class="muted">Project: Murli Development</p>
+    <p class="muted">Prepared for client communication</p>
+
+    <div class="section">
+        <h2>Summary</h2>
+        <p>
+            The seller package system has been redesigned so it is no longer connected to product upload limits.
+            Instead, seller packages now control showcase access and showcase limits only.
+        </p>
+        <p>
+            The seller menu also now includes a Showcase section so sellers can access Showcase Center, Stories,
+            Collections, and Vitrins directly from their panel.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Completed Changes</h2>
+        <ul>
+            <li>Removed product upload restriction from seller packages.</li>
+            <li>Removed monthly/yearly package selector and replaced it with day-based validity.</li>
+            <li>Kept showcase-related limits and permissions active in seller packages.</li>
+            <li>Updated seller package create, edit, list, and purchase screens.</li>
+            <li>Updated seller-side showcase pages so they use package validity and showcase limits only.</li>
+            <li>Added Showcase menu in the seller sidebar.</li>
+            <li>Updated product, auction, preorder, and API flows so they no longer block uploads based on package product count.</li>
+            <li>Added local development safeguards and verification bypasses where needed.</li>
+            <li>Fixed local database migration issues related to showcase permission columns.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Business Effect</h2>
+        <ul>
+            <li>Sellers can upload products without being blocked by package upload limits.</li>
+            <li>Packages are now tied to showcase functionality instead of product quantity restrictions.</li>
+            <li>Showcase is available to sellers from their own panel.</li>
+            <li>Package validity and showcase usage are still enforced correctly.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Files Updated</h2>
+        <ul>
+            <li>Seller package controllers and helper logic.</li>
+            <li>Seller package admin and seller views.</li>
+            <li>Seller showcase views and seller sidebar menu.</li>
+            <li>Product, auction, preorder, wholesale, and API controllers.</li>
+            <li>Local development support files and verification flow files.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Notes</h2>
+        <p>
+            The seller showcase collection form still contains monthly/yearly display period options because that
+            setting belongs to showcase collection behavior, not seller package control.
+        </p>
+        <p>
+            If you want, this can be separated further in a later update.
+        </p>
+    </div>
+</body>
+</html>
