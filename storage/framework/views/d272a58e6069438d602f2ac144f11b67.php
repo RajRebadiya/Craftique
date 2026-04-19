@@ -78,7 +78,7 @@
             <?php endif; ?>
         </div>
         <p class="mt-2 mb-0 text-muted small" id="showcaseProductHint">
-            <?php echo e(translate('Select a category to load products.')); ?>
+            <?php echo e(translate('Products are loaded by default. Use category, subcategory, or search to narrow them down.')); ?>
 
         </p>
     </div>
@@ -109,14 +109,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!categoryId) {
             rows.forEach(function (row) {
-                var input = row.querySelector('input[type="checkbox"]');
                 var text = row.innerText.toLowerCase();
                 var matchText = !term || text.indexOf(term) !== -1;
-                var keepVisible = !!(input && input.checked && matchText);
-                row.style.display = keepVisible ? '' : 'none';
+                row.style.display = matchText ? '' : 'none';
             });
             if (hint) {
-                hint.style.display = hasCheckedRows ? 'none' : '';
+                hint.style.display = '';
             }
             return;
         }

@@ -113,6 +113,8 @@ class ShowcaseCollectionController extends Controller
             $collectionItems = $this->buildLegacyCollectionItemsFromProducts($request->input('product_ids', []));
         }
 
+        $coverImage = $this->deriveCollectionCoverImage($collectionItems, (string) $request->input('cover_image', ''));
+
         $saveData = [
             'seller_id'             => $shop->id,
             'type'                  => 'collection',
@@ -125,7 +127,7 @@ class ShowcaseCollectionController extends Controller
             'intro_en'              => $introEn ?: null,
             'description_gr'        => $descriptionGr ?: null,
             'description_en'        => $descriptionEn ?: null,
-            'cover_image'           => $request->input('cover_image') ?: null,
+            'cover_image'           => $coverImage ?: null,
             'collection_items_json' => !empty($collectionItems) ? $collectionItems : null,
             'billing_period'        => null,
             'hashtags'              => $hashtags ?: null,
@@ -181,6 +183,8 @@ class ShowcaseCollectionController extends Controller
             $collectionItems = $this->buildLegacyCollectionItemsFromProducts($request->input('product_ids', []));
         }
 
+        $coverImage = $this->deriveCollectionCoverImage($collectionItems, (string) $request->input('cover_image', ''));
+
         $item->update([
             'title'                 => $titleGr ?: $titleEn,
             'intro'                 => $introGr ?: $introEn,
@@ -191,7 +195,7 @@ class ShowcaseCollectionController extends Controller
             'intro_en'              => $introEn ?: null,
             'description_gr'        => $descriptionGr ?: null,
             'description_en'        => $descriptionEn ?: null,
-            'cover_image'           => $request->input('cover_image') ?: null,
+            'cover_image'           => $coverImage ?: null,
             'collection_items_json' => !empty($collectionItems) ? $collectionItems : null,
             'billing_period'        => null,
             'hashtags'              => $hashtags ?: null,
@@ -411,6 +415,51 @@ class ShowcaseCollectionController extends Controller
         }
 
         return $rows;
+    }
+
+    private function deriveCollectionCoverImage(array $collectionItems, string $fallback = ''): ?string
+    {
+        $fallback = trim($fallback);
+
+        $firstProductId = collect($collectionItems)
+            ->pluck('product_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->first();
+
+        if ($firstProductId) {
+            $productQuery = DB::table('products')->where('id', $firstProductId);
+            if (!app()->environment('local')) {
+                $productQuery->where('user_id', auth()->id());
+            }
+
+            $product = $productQuery->select('thumbnail_img', 'photos')->first();
+            if ($product) {
+                $thumbnail = trim((string) ($product->thumbnail_img ?? ''));
+                if ($thumbnail !== '') {
+                    return $thumbnail;
+                }
+
+                $firstPhoto = collect(explode(',', (string) ($product->photos ?? '')))
+                    ->map(fn ($value) => trim($value))
+                    ->first(fn ($value) => $value !== '');
+
+                if (!empty($firstPhoto)) {
+                    return $firstPhoto;
+                }
+            }
+        }
+
+        $firstCardImage = collect($collectionItems)
+            ->pluck('cover_image')
+            ->map(fn ($value) => trim((string) $value))
+            ->first(fn ($value) => $value !== '');
+
+        if (!empty($firstCardImage)) {
+            return $firstCardImage;
+        }
+
+        return $fallback !== '' ? $fallback : null;
     }
 
     private function extractProductIdsFromCollectionItems(array $collectionItems): array

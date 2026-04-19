@@ -9,6 +9,7 @@
 /public/uploads
 /storage/*.key
 /storage/debugbar
+/storage/framework
 /vendor
 /temp
 /.idea
@@ -34,4 +35,6 @@ install.zip
 public/uploads.zip
 .env
 public/all
+/.history
+.env
 

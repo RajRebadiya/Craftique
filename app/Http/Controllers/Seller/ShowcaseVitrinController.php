@@ -91,6 +91,7 @@ class ShowcaseVitrinController extends Controller
         $descriptionGr = $request->input('description_gr', $request->input('description'));
         $descriptionEn = $request->input('description_en');
         $hashtags = trim((string) $request->input('hashtags', ''));
+        $posterData = trim((string) $request->input('poster_image_data', ''));
 
         $validated = $request->validate([
             'main_visual'   => 'nullable',
@@ -126,7 +127,7 @@ class ShowcaseVitrinController extends Controller
             'description_gr' => $descriptionGr,
             'description_en' => $descriptionEn,
             'main_visual'    => $validated['main_visual'],
-            'cover_image'    => $request->input('cover_image'),
+            'cover_image'    => $posterData !== '' ? $posterData : $request->input('cover_image'),
             'hashtags'       => $hashtags ?: null,
             'status'         => $validated['status'],
         ];
@@ -154,6 +155,7 @@ class ShowcaseVitrinController extends Controller
         $descriptionGr = $request->input('description_gr', $request->input('description'));
         $descriptionEn = $request->input('description_en');
         $hashtags = trim((string) $request->input('hashtags', ''));
+        $posterData = trim((string) $request->input('poster_image_data', ''));
 
         $validated = $request->validate([
             'main_visual'   => 'nullable',
@@ -189,7 +191,7 @@ class ShowcaseVitrinController extends Controller
             'description_gr' => $descriptionGr,
             'description_en' => $descriptionEn,
             'main_visual'    => $mainVisual,
-            'cover_image'    => $request->input('cover_image'),
+            'cover_image'    => $posterData !== '' ? $posterData : $request->input('cover_image'),
             'hashtags'       => $hashtags ?: null,
             'status'         => $validated['status'],
         ];

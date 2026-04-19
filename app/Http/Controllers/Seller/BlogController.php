@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Blog;
 use App\Models\BlogCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class BlogController extends Controller
@@ -13,7 +14,7 @@ class BlogController extends Controller
     public function index(Request $request)
     {
         $sort_search = null;
-        $blogs = Blog::orderBy('created_at', 'desc');
+        $blogs = $this->sellerBlogs()->orderBy('created_at', 'desc');
 
         if ($request->search != null) {
             $blogs = $blogs->where('title', 'like', '%' . $request->search . '%');
@@ -59,6 +60,12 @@ class BlogController extends Controller
         $blog->meta_img = $request->meta_img;
         $blog->meta_description = $request->meta_description;
         $blog->meta_keywords = $request->meta_keywords;
+        if (Schema::hasColumn('blogs', 'user_id')) {
+            $blog->user_id = auth()->id();
+        }
+        if (Schema::hasColumn('blogs', 'added_by')) {
+            $blog->added_by = 'seller';
+        }
 
         $blog->save();
 
@@ -68,7 +75,7 @@ class BlogController extends Controller
 
     public function edit($id)
     {
-        $blog = Blog::findOrFail($id);
+        $blog = $this->sellerBlog($id);
         $blog_categories = BlogCategory::all();
         $products = \DB::table('products')
             ->select('id', 'name')
@@ -86,7 +93,7 @@ class BlogController extends Controller
             'title' => 'required|max:255',
         ]);
 
-        $blog = Blog::findOrFail($id);
+        $blog = $this->sellerBlog($id);
 
         $blog->category_id = $request->category_id;
         $blog->title = $request->title;
@@ -101,6 +108,12 @@ class BlogController extends Controller
         $blog->meta_img = $request->meta_img;
         $blog->meta_description = $request->meta_description;
         $blog->meta_keywords = $request->meta_keywords;
+        if (Schema::hasColumn('blogs', 'user_id')) {
+            $blog->user_id = auth()->id();
+        }
+        if (Schema::hasColumn('blogs', 'added_by')) {
+            $blog->added_by = 'seller';
+        }
 
         $blog->save();
 
@@ -110,8 +123,28 @@ class BlogController extends Controller
 
     public function destroy($id)
     {
-        Blog::findOrFail($id)->delete();
+        $this->sellerBlog($id)->delete();
         return back();
+    }
+
+    private function sellerBlogs()
+    {
+        $query = Blog::query();
+
+        if (Schema::hasColumn('blogs', 'user_id')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        if (Schema::hasColumn('blogs', 'added_by')) {
+            $query->where('added_by', 'seller');
+        }
+
+        return $query;
+    }
+
+    private function sellerBlog($id): Blog
+    {
+        return $this->sellerBlogs()->findOrFail($id);
     }
 
     private function normalizeProductIds($value): array

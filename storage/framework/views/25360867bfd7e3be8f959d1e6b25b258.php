@@ -17,6 +17,7 @@
         $hashtags = old('hashtags', $item->hashtags ?? '');
         $mainVisual = old('main_visual', $item->main_visual ?? '');
         $coverImage = old('cover_image', $item->cover_image ?? '');
+        $posterImageData = old('poster_image_data');
         $status = old('status', $item->status ?? 'draft');
         $selectedProductId = old('product_id', $selectedProductId ?? '');
     ?>
@@ -43,6 +44,7 @@
                 <li><?php echo e(translate('Title is required in at least one language.')); ?></li>
                 <li><?php echo e(translate('Subtitle is used for the three-word tagline shown in the preview.')); ?></li>
                 <li><?php echo e(translate('Main visual is the primary media for the Launch.')); ?></li>
+                <li><?php echo e(translate('If you upload a video, you can pick a poster from suggested frames, choose a frame manually, or upload an image.')); ?></li>
                 <li><?php echo e(translate('One product should be linked to the Launch.')); ?></li>
                 <li><?php echo e(translate('Hashtags help the feed and search experience.')); ?></li>
             </ul>
@@ -150,7 +152,7 @@ unset($__errorArgs, $__bag); ?>
                                         <div class="input-group-text bg-soft-secondary font-weight-medium"><?php echo e(translate('Browse')); ?></div>
                                     </div>
                                     <div class="form-control file-amount"><?php echo e(translate('Choose Image or Video')); ?></div>
-                                    <input type="hidden" name="main_visual" class="selected-files" value="<?php echo e($mainVisual); ?>">
+                                    <input type="hidden" name="main_visual" class="selected-files story-video-input" value="<?php echo e($mainVisual); ?>">
                                 </div>
                                 <div class="file-preview box sm"></div>
 
@@ -167,18 +169,78 @@ unset($__errorArgs, $__bag); ?>
                             </div>
                         </div>
 
-                        <div class="form-group row mb-0">
-                            <label class="col-lg-2 col-form-label"><?php echo e(translate('Poster / Cover Image')); ?></label>
-                            <div class="col-lg-10">
-                                <div class="input-group" data-toggle="aizuploader" data-type="image" data-multiple="false">
-                                    <div class="input-group-prepend">
-                                        <div class="input-group-text bg-soft-secondary font-weight-medium"><?php echo e(translate('Browse')); ?></div>
-                                    </div>
-                                    <div class="form-control file-amount"><?php echo e(translate('Choose File')); ?></div>
-                                    <input type="hidden" name="cover_image" class="selected-files" value="<?php echo e($coverImage); ?>">
-                                </div>
-                                <div class="file-preview box sm"></div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4" data-story-poster>
+                    <div class="card-header">
+                        <h5 class="mb-0 h6"><?php echo e(translate('Poster / Frame Selection (Optional)')); ?></h5>
+                    </div>
+                    <div class="card-body">
+                        <input type="hidden" name="poster_image_data" class="story-poster-data" value="<?php echo e($posterImageData); ?>">
+
+                        <div class="d-flex flex-wrap mb-3" style="gap:10px;">
+                            <button type="button" class="btn btn-soft-primary btn-sm story-poster-tab" data-target="suggested">
+                                <?php echo e(translate('Select a Suggested Frame')); ?>
+
+                            </button>
+                            <button type="button" class="btn btn-soft-secondary btn-sm story-poster-tab" data-target="video">
+                                <?php echo e(translate('Choose a Frame from Video')); ?>
+
+                            </button>
+                            <button type="button" class="btn btn-soft-secondary btn-sm story-poster-tab" data-target="upload">
+                                <?php echo e(translate('Upload an Image')); ?>
+
+                            </button>
+                        </div>
+
+                        <div class="story-poster-panel" data-panel="suggested">
+                            <p class="text-muted mb-2">
+                                <?php echo e(translate('Suggested frames will appear after video upload. Select one to use as poster.')); ?>
+
+                            </p>
+                            <div class="story-frame-empty text-muted small mb-3">
+                                <?php echo e(translate('Upload a video to see suggested frames.')); ?>
+
                             </div>
+                            <div class="d-flex align-items-center story-frame-grid" style="gap:10px; overflow-x:auto;"></div>
+                        </div>
+
+                        <div class="story-poster-panel story-video-panel d-none" data-panel="video">
+                            <div class="row align-items-center">
+                                <div class="col-lg-6 mb-3 mb-lg-0">
+                                    <video class="w-100 rounded border story-video-player" controls muted playsinline></video>
+                                </div>
+                                <div class="col-lg-6">
+                                    <label class="text-muted small mb-2 d-block"><?php echo e(translate('Pick a frame and use it as poster')); ?></label>
+                                    <input type="range" class="form-control-range story-video-range" min="0" step="1" value="0">
+                                    <button type="button" class="btn btn-soft-primary btn-sm mt-3 story-capture-btn">
+                                        <?php echo e(translate('Use this frame')); ?>
+
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="story-poster-panel d-none" data-panel="upload">
+                            <div class="form-group row mb-0">
+                                <label class="col-lg-2 col-form-label"><?php echo e(translate('Poster Image')); ?></label>
+                                <div class="col-lg-10">
+                                    <div class="input-group" data-toggle="aizuploader" data-type="image" data-multiple="false">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium"><?php echo e(translate('Browse')); ?></div>
+                                        </div>
+                                        <div class="form-control file-amount"><?php echo e(translate('Choose File')); ?></div>
+                                        <input type="hidden" name="cover_image" class="selected-files story-cover-input" value="<?php echo e($coverImage); ?>">
+                                    </div>
+                                    <div class="file-preview box sm"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <div class="text-muted small mb-2"><?php echo e(translate('Selected poster preview')); ?></div>
+                            <div class="story-selected-preview text-muted small"><?php echo e(translate('No poster selected yet.')); ?></div>
                         </div>
                     </div>
                 </div>
@@ -250,6 +312,8 @@ unset($__errorArgs, $__bag); ?>
             </div>
         </div>
     </form>
+
+    <?php echo $__env->make('partials.story_poster_script', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('seller.layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\laragon\www\Murli_Devlopment\resources\views/seller/showcase/launch/form.blade.php ENDPATH**/ ?>

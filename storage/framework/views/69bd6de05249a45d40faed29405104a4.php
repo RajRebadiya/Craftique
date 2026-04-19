@@ -59,7 +59,7 @@
             <ul class="mb-0 pl-3 text-muted">
                 <li><?php echo e(translate('Title is required in at least one language.')); ?></li>
                 <li><?php echo e(translate('Main visual is the primary media.')); ?></li>
-                <li><?php echo e(translate('Cover image is optional and can be used as preview / fallback.')); ?></li>
+                <li><?php echo e(translate('The first selected product image is used automatically as the collection main visual.')); ?></li>
                 <li><?php echo e(translate('Linked products are optional.')); ?></li>
                 <li><?php echo e(translate('You can save as draft or publish directly.')); ?></li>
             </ul>
@@ -153,30 +153,7 @@ unset($__errorArgs, $__bag); ?>
                 ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
             </div>
         </div>
-
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header">
-                <h5 class="mb-0 h6"><?php echo e(translate('Collection Cover / Main Visual')); ?></h5>
-            </div>
-            <div class="card-body">
-                <div class="form-group row">
-                    <label class="col-lg-2 col-form-label"><?php echo e(translate('Collection Cover Image')); ?></label>
-                    <div class="col-lg-10">
-                        <div class="input-group" data-toggle="aizuploader" data-type="image" data-multiple="false">
-                            <div class="input-group-prepend">
-                                <div class="input-group-text bg-soft-secondary font-weight-medium"><?php echo e(translate('Browse')); ?></div>
-                            </div>
-                            <div class="form-control file-amount"><?php echo e(translate('Choose File')); ?></div>
-                            <input type="hidden" name="cover_image" class="selected-files" value="<?php echo e($coverImage); ?>">
-                        </div>
-                        <div class="file-preview box sm"></div>
-                    </div>
-                </div>
-
-                <div class="form-group row mb-0">
-                </div>
-            </div>
-        </div>
+        <input type="hidden" name="cover_image" value="<?php echo e($coverImage); ?>">
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap" style="gap:10px;">

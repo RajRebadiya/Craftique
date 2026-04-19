@@ -84,6 +84,7 @@ class ShowcaseLaunchController extends Controller
         $descriptionGr = trim((string) $request->input('description_gr', $request->input('description', '')));
         $descriptionEn = trim((string) $request->input('description_en', ''));
         $hashtags = trim((string) $request->input('hashtags', ''));
+        $posterData = trim((string) $request->input('poster_image_data', ''));
 
         $productRule = Rule::exists('products', 'id');
         if (!app()->environment('local')) {
@@ -123,7 +124,7 @@ class ShowcaseLaunchController extends Controller
             'description_gr' => $descriptionGr ?: null,
             'description_en' => $descriptionEn ?: null,
             'main_visual'    => $request->input('main_visual') ?: null,
-            'cover_image'    => $request->input('cover_image') ?: null,
+            'cover_image'    => $posterData !== '' ? $posterData : ($request->input('cover_image') ?: null),
             'hashtags'       => $hashtags ?: null,
             'status'         => $validated['status'],
         ];
@@ -154,6 +155,7 @@ class ShowcaseLaunchController extends Controller
         $descriptionGr = trim((string) $request->input('description_gr', $request->input('description', '')));
         $descriptionEn = trim((string) $request->input('description_en', ''));
         $hashtags = trim((string) $request->input('hashtags', ''));
+        $posterData = trim((string) $request->input('poster_image_data', ''));
 
         $productRule = Rule::exists('products', 'id');
         if (!app()->environment('local')) {
@@ -201,7 +203,7 @@ class ShowcaseLaunchController extends Controller
             'description_gr' => $descriptionGr ?: null,
             'description_en' => $descriptionEn ?: null,
             'main_visual'    => $mainVisual,
-            'cover_image'    => $request->input('cover_image') ?: null,
+            'cover_image'    => $posterData !== '' ? $posterData : ($request->input('cover_image') ?: null),
             'hashtags'       => $hashtags ?: null,
             'status'         => $validated['status'],
         ]);

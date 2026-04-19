@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BlogCategory;
 use App\Models\Blog;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Stichoza\GoogleTranslate\GoogleTranslate;
 
@@ -81,8 +82,12 @@ class BlogController extends Controller
         $blog->slug = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '-', $request->slug));
         $blog->short_description = $request->short_description;
         $blog->description = $request->description;
-        $blog->product_ids = $productIds;
-        $blog->hashtags = $hashtags;
+        if (Schema::hasColumn('blogs', 'product_ids')) {
+            $blog->product_ids = $productIds;
+        }
+        if (Schema::hasColumn('blogs', 'hashtags')) {
+            $blog->hashtags = $hashtags;
+        }
 
         $blog->meta_title = $request->meta_title;
         $blog->meta_img = $request->meta_img;
@@ -146,8 +151,12 @@ class BlogController extends Controller
         $blog->slug = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '-', $request->slug));
         $blog->short_description = $request->short_description;
         $blog->description = $request->description;
-        $blog->product_ids = $productIds;
-        $blog->hashtags = $hashtags;
+        if (Schema::hasColumn('blogs', 'product_ids')) {
+            $blog->product_ids = $productIds;
+        }
+        if (Schema::hasColumn('blogs', 'hashtags')) {
+            $blog->hashtags = $hashtags;
+        }
 
         $blog->meta_title = $request->meta_title;
         $blog->meta_img = $request->meta_img;
