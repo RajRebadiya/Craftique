@@ -74,7 +74,7 @@
         @endif
 
         <div class="row">
-            <div class="col-lg-6">
+            <div class="col-xl-4 col-lg-5">
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header">
                 <h5 class="mb-0 h6">{{ translate('Greek Content') }}</h5>
@@ -263,7 +263,7 @@
         </div>
             </div>
 
-            <div class="col-lg-6">
+            <div class="col-xl-8 col-lg-7">
                 @include('partials.showcase_preview', [
                     'previewTitle' => translate('Collection Preview'),
                     'previewNote' => translate('Preview will appear here after you add the cards and save the form.'),

@@ -135,6 +135,30 @@
 
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header">
+                        <h5 class="mb-0 h6">{{ translate('Product Selection') }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group row mb-0">
+                            <label class="col-lg-2 col-form-label">{{ translate('Product') }}</label>
+                            <div class="col-lg-10">
+                                <select name="product_id" class="form-control aiz-selectpicker" data-live-search="true">
+                                    <option value="">{{ translate('Select One') }}</option>
+                                    @foreach($products as $product)
+                                        <option value="{{ $product->id }}" {{ (string) $selectedProductId === (string) $product->id ? 'selected' : '' }}>
+                                            {{ $product->name }} (#{{ $product->id }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('product_id')
+                                    <small class="text-danger d-block mt-1">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header">
                         <h5 class="mb-0 h6">{{ translate('Launch Media') }}</h5>
                     </div>
                     <div class="card-body">
@@ -153,6 +177,7 @@
                                 @error('main_visual')
                                     <small class="text-danger d-block mt-2">{{ $message }}</small>
                                 @enderror
+                                <small class="text-danger d-block mt-2 launch-media-error" style="display:none;"></small>
                             </div>
                         </div>
 
@@ -228,30 +253,6 @@
 
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0 h6">{{ translate('Product Selection') }}</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group row mb-0">
-                            <label class="col-lg-2 col-form-label">{{ translate('Product') }}</label>
-                            <div class="col-lg-10">
-                                <select name="product_id" class="form-control aiz-selectpicker" data-live-search="true">
-                                    <option value="">{{ translate('Select One') }}</option>
-                                    @foreach($products as $product)
-                                        <option value="{{ $product->id }}" {{ (string) $selectedProductId === (string) $product->id ? 'selected' : '' }}>
-                                            {{ $product->name }} (#{{ $product->id }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('product_id')
-                                    <small class="text-danger d-block mt-1">{{ $message }}</small>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header">
                         <h5 class="mb-0 h6">{{ translate('Publishing') }}</h5>
                     </div>
                     <div class="card-body">
@@ -287,4 +288,226 @@
     </form>
 
     @include('partials.story_poster_script')
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var form = document.querySelector('form[action="{{ $formAction }}"]');
+            if (!form) {
+                return;
+            }
+
+            var mainVisualInput = form.querySelector('input[name="main_visual"]');
+            var coverInput = form.querySelector('input[name="cover_image"]');
+            var posterDataInput = form.querySelector('input[name="poster_image_data"]');
+            var mediaError = form.querySelector('.launch-media-error');
+            var selectedPreview = form.querySelector('.story-selected-preview');
+            var lastCheckedValue = null;
+            var validationToken = 0;
+            var hasLandscapeValidationError = false;
+            var landscapeMessage = @json(translate('Only landscape images or videos are supported for Launch main visual.'));
+
+            if (!mainVisualInput) {
+                return;
+            }
+
+            function isUrl(value) {
+                return /^https?:\/\//i.test(value) || /^\/|^data:/i.test(value);
+            }
+
+            function getAppUrl() {
+                if (window.AIZ && AIZ.data && AIZ.data.appUrl) {
+                    return AIZ.data.appUrl;
+                }
+                var meta = document.querySelector('meta[name="app-url"]');
+                return meta ? meta.getAttribute('content') : '';
+            }
+
+            function getCsrfToken() {
+                if (window.AIZ && AIZ.data && AIZ.data.csrf) {
+                    return AIZ.data.csrf;
+                }
+                var meta = document.querySelector('meta[name="csrf-token"]');
+                return meta ? meta.getAttribute('content') : '';
+            }
+
+            function fetchFileInfo(ids) {
+                if (typeof $ === 'undefined') {
+                    return Promise.resolve([]);
+                }
+
+                var appUrl = getAppUrl();
+                if (!appUrl) {
+                    return Promise.resolve([]);
+                }
+
+                return new Promise(function(resolve) {
+                    $.post(
+                        appUrl.replace(/\/$/, '') + "/aiz-uploader/get_file_by_ids",
+                        {
+                            _token: getCsrfToken(),
+                            ids: ids
+                        },
+                        function(data) {
+                            resolve(Array.isArray(data) ? data : []);
+                        }
+                    ).fail(function() {
+                        resolve([]);
+                    });
+                });
+            }
+
+            function normalizeFileUrl(file) {
+                if (!file) {
+                    return null;
+                }
+                var url = file.file_url || file.file_name || file.file_path || file.file;
+                if (!url) {
+                    return null;
+                }
+                if (isUrl(url)) {
+                    return url;
+                }
+                var appUrl = getAppUrl();
+                if (appUrl) {
+                    return appUrl.replace(/\/$/, '') + '/' + String(url).replace(/^\//, '');
+                }
+                return url;
+            }
+
+            function resolveMediaUrl(value) {
+                if (!value) {
+                    return Promise.resolve(null);
+                }
+
+                if (isUrl(value)) {
+                    return Promise.resolve(value);
+                }
+
+                var firstId = String(value).split(',')[0].trim();
+                if (!firstId) {
+                    return Promise.resolve(null);
+                }
+
+                if (/\/|\.|uploads/i.test(firstId)) {
+                    return Promise.resolve(normalizeFileUrl({
+                        file_name: firstId
+                    }));
+                }
+
+                return fetchFileInfo(firstId).then(function(files) {
+                    return files.length ? normalizeFileUrl(files[0]) : null;
+                });
+            }
+
+            function setError(message) {
+                if (!mediaError) {
+                    return;
+                }
+                mediaError.textContent = message || '';
+                mediaError.style.display = message ? 'block' : 'none';
+                hasLandscapeValidationError = !!message;
+            }
+
+            function clearUploaderPreview(input) {
+                if (!input) {
+                    return;
+                }
+                input.value = '';
+                var previewBox = input.closest('.input-group') ? input.closest('.input-group').nextElementSibling : null;
+                if (previewBox && previewBox.classList.contains('file-preview')) {
+                    previewBox.innerHTML = '';
+                }
+            }
+
+            function resetPosterSelection() {
+                if (posterDataInput) {
+                    posterDataInput.value = '';
+                }
+                if (coverInput) {
+                    clearUploaderPreview(coverInput);
+                }
+                if (selectedPreview) {
+                    selectedPreview.innerHTML =
+                        '<div class="text-muted small">{{ translate("No poster selected yet.") }}</div>';
+                }
+            }
+
+            function clearInvalidMedia() {
+                clearUploaderPreview(mainVisualInput);
+                resetPosterSelection();
+            }
+
+            function validateImage(url, token) {
+                return new Promise(function(resolve) {
+                    var img = new Image();
+                    img.onload = function() {
+                        resolve(token === validationToken ? img.naturalWidth >= img.naturalHeight : true);
+                    };
+                    img.onerror = function() {
+                        resolve(token === validationToken ? false : true);
+                    };
+                    img.src = url;
+                });
+            }
+
+            function validateVideo(url, token) {
+                return new Promise(function(resolve) {
+                    var video = document.createElement('video');
+                    video.preload = 'metadata';
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.onloadedmetadata = function() {
+                        resolve(token === validationToken ? video.videoWidth >= video.videoHeight : true);
+                    };
+                    video.onerror = function() {
+                        resolve(token === validationToken ? false : true);
+                    };
+                    video.src = url;
+                });
+            }
+
+            function validateLaunchMedia() {
+                var currentValue = (mainVisualInput.value || '').trim();
+                if (!currentValue) {
+                    lastCheckedValue = '';
+                    if (!hasLandscapeValidationError) {
+                        setError('');
+                    }
+                    return;
+                }
+                if (currentValue === lastCheckedValue) {
+                    return;
+                }
+
+                lastCheckedValue = currentValue;
+                validationToken += 1;
+                var token = validationToken;
+
+                resolveMediaUrl(currentValue).then(function(url) {
+                    if (token !== validationToken || !url) {
+                        return;
+                    }
+
+                    var isVideo = /\.(mp4|mov|webm|ogg)$/i.test(url);
+                    return (isVideo ? validateVideo(url, token) : validateImage(url, token)).then(function(
+                        isLandscape) {
+                        if (token !== validationToken) {
+                            return;
+                        }
+                        if (!isLandscape) {
+                            clearInvalidMedia();
+                            setError(landscapeMessage);
+                            lastCheckedValue = '';
+                            return;
+                        }
+                        setError('');
+                    });
+                });
+            }
+
+            mainVisualInput.addEventListener('change', validateLaunchMedia);
+            setInterval(validateLaunchMedia, 1200);
+            validateLaunchMedia();
+        });
+    </script>
 @endsection
