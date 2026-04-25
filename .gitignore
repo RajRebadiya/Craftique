@@ -39,3 +39,7 @@ public/all
 .env
 
 craftique-wp-files.zip
+.env
+.history
+/vendor
+/node_modules
