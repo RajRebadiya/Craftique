@@ -300,9 +300,15 @@ class ShowcaseVitrinController extends Controller
 
     private function syncProducts($showcaseId, array $productIds = [])
     {
-        $allowedProductIds = DB::table('products')
-            ->where('user_id', auth()->id())
-            ->whereIn('id', $productIds)
+        $productsQuery = DB::table('products')->whereIn('id', $productIds);
+
+        // Keep local showcase testing consistent with the seller form,
+        // which exposes the full product list in local environments.
+        if (!app()->environment('local')) {
+            $productsQuery->where('user_id', auth()->id());
+        }
+
+        $allowedProductIds = $productsQuery
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->toArray();

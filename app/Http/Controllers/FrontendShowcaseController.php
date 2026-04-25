@@ -31,10 +31,198 @@ class FrontendShowcaseController extends Controller
         return $this->renderFeed($request);
     }
 
+    public function storyPage(Request $request)
+    {
+        $stories = DB::table('showcases')
+            ->leftJoin('shops', 'showcases.seller_id', '=', 'shops.id')
+            ->where('showcases.status', 'published')
+            ->where('showcases.type', 'history')
+            ->orderByDesc('showcases.created_at')
+            ->select(
+                'showcases.*',
+                'shops.id as seller_shop_id',
+                'shops.name as seller_name',
+                'shops.slug as seller_slug',
+                'shops.logo as seller_logo'
+            )
+            ->limit(30)
+            ->get()
+            ->map(function ($item) {
+                return $this->applyLocaleFields($item);
+            });
+
+        $storyIds = $stories->pluck('id')->filter()->values()->all();
+        $groupedProducts = collect();
+
+        if (!empty($storyIds)) {
+            $groupedProducts = DB::table('showcase_products')
+                ->join('products', 'showcase_products.product_id', '=', 'products.id')
+                ->whereIn('showcase_products.showcase_id', $storyIds)
+                ->orderBy('showcase_products.sort_order')
+                ->select(
+                    'showcase_products.showcase_id',
+                    'products.id',
+                    'products.name',
+                    'products.slug',
+                    'products.thumbnail_img',
+                    'products.unit_price',
+                    'products.discount',
+                    'products.discount_type'
+                )
+                ->get()
+                ->groupBy('showcase_id');
+        }
+
+        $storyFeed = $stories->map(function ($item) use ($groupedProducts) {
+            $rawVisual = ($item->main_visual ?? null) ?: ($item->cover_image ?? null);
+            $mediaUrl = $this->resolveAssetUrl($rawVisual);
+            $extension = strtolower(pathinfo(parse_url($mediaUrl ?? '', PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+            $isVideo = in_array($extension, ['mp4', 'webm', 'ogg', 'mov']);
+
+            $hashtags = !empty($item->hashtags)
+                ? collect(explode(',', $item->hashtags))->map(fn ($tag) => trim($tag))->filter()->values()
+                : collect();
+
+            $products = collect($groupedProducts->get($item->id, collect()))
+                ->map(function ($product) {
+                    $finalPrice = $product->unit_price;
+                    if (!empty($product->discount) && !empty($product->discount_type)) {
+                        if ($product->discount_type === 'percent') {
+                            $finalPrice = $product->unit_price - (($product->unit_price * $product->discount) / 100);
+                        } elseif ($product->discount_type === 'amount') {
+                            $finalPrice = $product->unit_price - $product->discount;
+                        }
+                    }
+
+                    $finalPrice = max(0, $finalPrice);
+
+                    return (object) [
+                        'id' => (int) $product->id,
+                        'name' => $product->name,
+                        'slug' => $product->slug,
+                        'thumbnail_url' => $this->resolveAssetUrl($product->thumbnail_img ?? null),
+                        'price_html' => single_price($finalPrice),
+                        'product_url' => !empty($product->slug) ? route('product', $product->slug) : null,
+                    ];
+                })
+                ->values();
+
+            return (object) [
+                'id' => (int) $item->id,
+                'title' => $item->title ?: translate('Story'),
+                'subtitle' => $item->subtitle ?: '',
+                'description' => $item->description ?: ($item->intro ?: ''),
+                'hashtags' => $hashtags->all(),
+                'seller_name' => $item->seller_name ?: translate('The Shop'),
+                'seller_shop_id' => $item->seller_shop_id ?: null,
+                'seller_slug' => $item->seller_slug ?: null,
+                'seller_logo_url' => $this->resolveAssetUrl($item->seller_logo ?? null),
+                'media_url' => $mediaUrl,
+                'media_is_video' => $isVideo,
+                'created_at' => $item->created_at,
+                'post_url' => route('frontend.showcase.post', [
+                    'id' => $item->id,
+                    'slug' => \Illuminate\Support\Str::slug($item->title ?: $item->id),
+                ]),
+                'products' => $products,
+                'primary_product' => $products->first(),
+            ];
+        })->values();
+
+        return view('frontend.showcase.story_page', [
+            'stories' => $storyFeed,
+            'initialStoryId' => (int) ($request->get('story') ?: optional($storyFeed->first())->id),
+        ]);
+    }
+
     public function collection(Request $request)
     {
         $request->merge(['type' => 'collection']);
         return $this->renderFeed($request);
+    }
+
+    public function collectionPage(Request $request)
+    {
+        $collections = DB::table('showcases')
+            ->leftJoin('shops', 'showcases.seller_id', '=', 'shops.id')
+            ->where('showcases.status', 'published')
+            ->where('showcases.type', 'collection')
+            ->orderByDesc('showcases.created_at')
+            ->select(
+                'showcases.*',
+                'shops.id as seller_shop_id',
+                'shops.name as seller_name',
+                'shops.slug as seller_slug',
+                'shops.logo as seller_logo'
+            )
+            ->limit(20)
+            ->get()
+            ->map(function ($item) {
+                return $this->applyLocaleFields($item);
+            });
+
+        $collectionFeed = $collections->map(function ($item) {
+            $hashtags = !empty($item->hashtags)
+                ? collect(explode(',', $item->hashtags))->map(fn ($tag) => trim($tag))->filter()->values()->all()
+                : [];
+
+            $items = $this->getCollectionItems($item->id)->map(function ($row) {
+                $coverUrl = $this->resolveAssetUrl($row->cover_image ?? null);
+                $product = $row->product;
+                $priceHtml = '';
+                $thumbUrl = null;
+                $productId = null;
+                $productUrl = null;
+                $productName = '';
+
+                if ($product) {
+                    $finalPrice = $product->unit_price;
+                    if (!empty($product->discount) && !empty($product->discount_type)) {
+                        if ($product->discount_type === 'percent') {
+                            $finalPrice = $product->unit_price - (($product->unit_price * $product->discount) / 100);
+                        } elseif ($product->discount_type === 'amount') {
+                            $finalPrice = $product->unit_price - $product->discount;
+                        }
+                    }
+                    $finalPrice = max(0, $finalPrice);
+                    $priceHtml = single_price($finalPrice);
+                    $thumbUrl = $this->resolveAssetUrl($product->thumbnail_img ?? null);
+                    $productId = (int) $product->id;
+                    $productUrl = !empty($product->slug) ? route('product', $product->slug) : null;
+                    $productName = $product->name ?? '';
+                }
+
+                return (object) [
+                    'title' => $row->title ?: translate('Collection Item'),
+                    'description' => $row->description ?: '',
+                    'cover_image_url' => $coverUrl ?: $thumbUrl,
+                    'product_id' => $productId,
+                    'product_url' => $productUrl,
+                    'product_name' => $productName,
+                    'product_thumb_url' => $thumbUrl,
+                    'price_html' => $priceHtml,
+                ];
+            })->values();
+
+            return (object) [
+                'id' => (int) $item->id,
+                'title' => $item->title ?: translate('Collection'),
+                'subtitle' => $item->subtitle ?: '',
+                'description' => $item->description ?: ($item->intro ?: ''),
+                'seller_name' => $item->seller_name ?: translate('Shop Name'),
+                'seller_shop_id' => $item->seller_shop_id ?: null,
+                'seller_slug' => $item->seller_slug ?: null,
+                'seller_logo_url' => $this->resolveAssetUrl($item->seller_logo ?? null),
+                'hashtags' => $hashtags,
+                'items' => $items,
+            ];
+        })->filter(function ($item) {
+            return $item->items->isNotEmpty();
+        })->values();
+
+        return view('frontend.showcase.collection_page', [
+            'collections' => $collectionFeed,
+        ]);
     }
 
     public function vitrin(Request $request)
@@ -43,10 +231,241 @@ class FrontendShowcaseController extends Controller
         return $this->renderFeed($request);
     }
 
+    public function storefrontPage(Request $request)
+    {
+        $storefronts = DB::table('showcases')
+            ->leftJoin('shops', 'showcases.seller_id', '=', 'shops.id')
+            ->where('showcases.status', 'published')
+            ->where('showcases.type', 'vitrin')
+            ->orderByDesc('showcases.created_at')
+            ->select(
+                'showcases.*',
+                'shops.id as seller_shop_id',
+                'shops.name as seller_name',
+                'shops.slug as seller_slug',
+                'shops.logo as seller_logo'
+            )
+            ->limit(20)
+            ->get()
+            ->map(function ($item) {
+                return $this->applyLocaleFields($item);
+            });
+
+        $showcaseIds = $storefronts->pluck('id')->filter()->values()->all();
+        $groupedProducts = collect();
+
+        if (!empty($showcaseIds)) {
+            $groupedProducts = DB::table('showcase_products')
+                ->join('products', 'showcase_products.product_id', '=', 'products.id')
+                ->whereIn('showcase_products.showcase_id', $showcaseIds)
+                ->orderBy('showcase_products.sort_order')
+                ->select(
+                    'showcase_products.showcase_id',
+                    'products.id',
+                    'products.name',
+                    'products.slug',
+                    'products.thumbnail_img',
+                    'products.unit_price',
+                    'products.discount',
+                    'products.discount_type'
+                )
+                ->get()
+                ->groupBy('showcase_id');
+        }
+
+        $storefrontFeed = $storefronts->map(function ($item) use ($groupedProducts) {
+            $products = collect($groupedProducts->get($item->id, collect()))
+                ->map(function ($product) {
+                    $finalPrice = $product->unit_price;
+                    if (!empty($product->discount) && !empty($product->discount_type)) {
+                        if ($product->discount_type === 'percent') {
+                            $finalPrice = $product->unit_price - (($product->unit_price * $product->discount) / 100);
+                        } elseif ($product->discount_type === 'amount') {
+                            $finalPrice = $product->unit_price - $product->discount;
+                        }
+                    }
+                    $finalPrice = max(0, $finalPrice);
+
+                    return (object) [
+                        'id' => (int) $product->id,
+                        'name' => $product->name,
+                        'thumbnail_url' => $this->resolveAssetUrl($product->thumbnail_img ?? null),
+                        'price_html' => single_price($finalPrice),
+                        'product_url' => !empty($product->slug) ? route('product', $product->slug) : null,
+                    ];
+                })
+                ->values();
+
+            return (object) [
+                'id' => (int) $item->id,
+                'title' => $item->title ?: translate('Storefront'),
+                'description' => $item->description ?: ($item->intro ?: ''),
+                'seller_name' => $item->seller_name ?: translate('Shop Name'),
+                'seller_shop_id' => $item->seller_shop_id ?: null,
+                'seller_slug' => $item->seller_slug ?: null,
+                'seller_logo_url' => $this->resolveAssetUrl($item->seller_logo ?? null),
+                'main_visual_url' => $this->resolveAssetUrl(($item->main_visual ?? null) ?: ($item->cover_image ?? null)),
+                'products' => $products,
+            ];
+        })->values();
+
+        return view('frontend.showcase.storefront_page', [
+            'storefronts' => $storefrontFeed,
+        ]);
+    }
+
     public function launch(Request $request)
     {
         $request->merge(['type' => 'launch']);
         return $this->renderFeed($request);
+    }
+
+    public function launchPage(Request $request)
+    {
+        $launches = DB::table('showcases')
+            ->leftJoin('shops', 'showcases.seller_id', '=', 'shops.id')
+            ->where('showcases.status', 'published')
+            ->where('showcases.type', 'launch')
+            ->orderByDesc('showcases.created_at')
+            ->select(
+                'showcases.*',
+                'shops.id as seller_shop_id',
+                'shops.name as seller_name',
+                'shops.slug as seller_slug',
+                'shops.logo as seller_logo',
+                'shops.user_id as seller_user_id'
+            )
+            ->limit(20)
+            ->get()
+            ->map(function ($item) {
+                return $this->applyLocaleFields($item);
+            });
+
+        $launchIds = $launches->pluck('id')->filter()->values()->all();
+        $sellerUserIds = $launches->pluck('seller_user_id')->filter()->unique()->values()->all();
+        $groupedProducts = collect();
+        $sellerProducts = collect();
+
+        if (!empty($launchIds)) {
+            $groupedProducts = DB::table('showcase_products')
+                ->join('products', 'showcase_products.product_id', '=', 'products.id')
+                ->whereIn('showcase_products.showcase_id', $launchIds)
+                ->orderBy('showcase_products.sort_order')
+                ->select(
+                    'showcase_products.showcase_id',
+                    'products.id',
+                    'products.name',
+                    'products.slug',
+                    'products.thumbnail_img',
+                    'products.photos',
+                    'products.unit_price',
+                    'products.discount',
+                    'products.discount_type',
+                    'products.user_id'
+                )
+                ->get()
+                ->groupBy('showcase_id');
+        }
+
+        if (!empty($sellerUserIds)) {
+            $sellerProducts = DB::table('products')
+                ->whereIn('user_id', $sellerUserIds)
+                ->orderByDesc('id')
+                ->select(
+                    'id',
+                    'user_id',
+                    'name',
+                    'slug',
+                    'thumbnail_img',
+                    'photos',
+                    'unit_price',
+                    'discount',
+                    'discount_type'
+                )
+                ->get()
+                ->groupBy('user_id');
+        }
+
+        $launchFeed = $launches->map(function ($item) use ($groupedProducts, $sellerProducts) {
+            $mediaUrl = $this->resolveAssetUrl(($item->main_visual ?? null) ?: ($item->cover_image ?? null));
+            $extension = strtolower(pathinfo(parse_url($mediaUrl ?? '', PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+            $isVideo = in_array($extension, ['mp4', 'webm', 'ogg', 'mov']);
+
+            $hashtags = !empty($item->hashtags)
+                ? collect(explode(',', $item->hashtags))->map(fn ($tag) => trim($tag))->filter()->values()->all()
+                : [];
+
+            $mapProduct = function ($product) {
+                $finalPrice = $product->unit_price;
+                if (!empty($product->discount) && !empty($product->discount_type)) {
+                    if ($product->discount_type === 'percent') {
+                        $finalPrice = $product->unit_price - (($product->unit_price * $product->discount) / 100);
+                    } elseif ($product->discount_type === 'amount') {
+                        $finalPrice = $product->unit_price - $product->discount;
+                    }
+                }
+                $finalPrice = max(0, $finalPrice);
+
+                $gallery = collect(explode(',', (string) ($product->photos ?? '')))
+                    ->map(fn ($value) => trim($value))
+                    ->filter()
+                    ->take(4)
+                    ->map(fn ($value) => $this->resolveAssetUrl($value))
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                $thumbUrl = $this->resolveAssetUrl($product->thumbnail_img ?? null);
+                if ($thumbUrl && !in_array($thumbUrl, $gallery)) {
+                    array_unshift($gallery, $thumbUrl);
+                    $gallery = array_values(array_unique(array_filter($gallery)));
+                }
+
+                return (object) [
+                    'id' => (int) $product->id,
+                    'name' => $product->name,
+                    'thumbnail_url' => $thumbUrl,
+                    'price_html' => single_price($finalPrice),
+                    'product_url' => !empty($product->slug) ? route('product', $product->slug) : null,
+                    'gallery' => $gallery,
+                ];
+            };
+
+            $primaryProduct = optional(collect($groupedProducts->get($item->id, collect()))->first());
+            $primaryPayload = $primaryProduct && !empty($primaryProduct->id) ? $mapProduct($primaryProduct) : null;
+
+            $relatedProducts = collect($sellerProducts->get($item->seller_user_id, collect()))
+                ->filter(function ($product) use ($primaryPayload) {
+                    return !$primaryPayload || (int) $product->id !== (int) $primaryPayload->id;
+                })
+                ->take(4)
+                ->map($mapProduct)
+                ->values();
+
+            if ($primaryPayload) {
+                $relatedProducts = collect([$primaryPayload])->merge($relatedProducts)->take(5)->values();
+            }
+
+            return (object) [
+                'id' => (int) $item->id,
+                'title' => $item->title ?: translate('Launch'),
+                'subtitle' => $item->subtitle ?: '',
+                'description' => $item->description ?: '',
+                'seller_name' => $item->seller_name ?: translate('Shop Name'),
+                'seller_shop_id' => $item->seller_shop_id ?: null,
+                'seller_slug' => $item->seller_slug ?: null,
+                'seller_logo_url' => $this->resolveAssetUrl($item->seller_logo ?? null),
+                'media_url' => $mediaUrl,
+                'media_is_video' => $isVideo,
+                'hashtags' => $hashtags,
+                'primary_product' => $primaryPayload,
+                'related_products' => $relatedProducts,
+            ];
+        })->values();
+
+        return view('frontend.showcase.launch_page', [
+            'launches' => $launchFeed,
+        ]);
     }
 
     public function show($id, $slug = null)
@@ -327,5 +746,22 @@ class FrontendShowcaseController extends Controller
                 'products.discount_type'
             )
             ->get();
+    }
+
+    private function resolveAssetUrl($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            return uploaded_asset($value);
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        return asset($value);
     }
 }

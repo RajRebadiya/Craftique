@@ -44,7 +44,8 @@
             <ul class="mb-0 pl-3 text-muted">
                 <li>{{ translate('Title is required in at least one language.') }}</li>
                 <li>{{ translate('Subtitle is used for the three-word tagline shown in the preview.') }}</li>
-                <li>{{ translate('Main visual is the primary media for the Launch.') }}</li>
+                <li>{{ translate('Main visual must use a 16:9 HD landscape ratio.') }}</li>
+                <li>{{ translate('Recommended sizes: 1280x720 or 1920x1080.') }}</li>
                 <li>{{ translate('If you upload a video, you can pick a poster from suggested frames, choose a frame manually, or upload an image.') }}</li>
                 <li>{{ translate('One product should be linked to the Launch.') }}</li>
                 <li>{{ translate('Hashtags help the feed and search experience.') }}</li>
@@ -171,12 +172,18 @@
                                     </div>
                                     <div class="form-control file-amount">{{ translate('Choose Image or Video') }}</div>
                                     <input type="hidden" name="main_visual" class="selected-files story-video-input" value="{{ $mainVisual }}">
+                                    <input type="hidden" name="launch_media_width" value="{{ old('launch_media_width') }}">
+                                    <input type="hidden" name="launch_media_height" value="{{ old('launch_media_height') }}">
+                                    <input type="hidden" name="launch_media_kind" value="{{ old('launch_media_kind') }}">
                                 </div>
                                 <div class="file-preview box sm"></div>
 
                                 @error('main_visual')
                                     <small class="text-danger d-block mt-2">{{ $message }}</small>
                                 @enderror
+                                <small class="text-muted d-block mt-2">
+                                    {{ translate('Expected ratio: 16:9 landscape only. Minimum 1280x720, recommended 1920x1080.') }}
+                                </small>
                                 <small class="text-danger d-block mt-2 launch-media-error" style="display:none;"></small>
                             </div>
                         </div>
@@ -299,12 +306,16 @@
             var mainVisualInput = form.querySelector('input[name="main_visual"]');
             var coverInput = form.querySelector('input[name="cover_image"]');
             var posterDataInput = form.querySelector('input[name="poster_image_data"]');
+            var mediaWidthInput = form.querySelector('input[name="launch_media_width"]');
+            var mediaHeightInput = form.querySelector('input[name="launch_media_height"]');
+            var mediaKindInput = form.querySelector('input[name="launch_media_kind"]');
             var mediaError = form.querySelector('.launch-media-error');
             var selectedPreview = form.querySelector('.story-selected-preview');
             var lastCheckedValue = null;
             var validationToken = 0;
             var hasLandscapeValidationError = false;
-            var landscapeMessage = @json(translate('Only landscape images or videos are supported for Launch main visual.'));
+            var ratioMessage = @json(translate('Launch main visual must use a 16:9 landscape ratio such as 1280x720 or 1920x1080.'));
+            var sizeMessage = @json(translate('Launch main visual must be at least 1280x720.'));
 
             if (!mainVisualInput) {
                 return;
@@ -408,6 +419,12 @@
                 hasLandscapeValidationError = !!message;
             }
 
+            function setMediaMeta(width, height, kind) {
+                if (mediaWidthInput) mediaWidthInput.value = width || '';
+                if (mediaHeightInput) mediaHeightInput.value = height || '';
+                if (mediaKindInput) mediaKindInput.value = kind || '';
+            }
+
             function clearUploaderPreview(input) {
                 if (!input) {
                     return;
@@ -435,16 +452,28 @@
             function clearInvalidMedia() {
                 clearUploaderPreview(mainVisualInput);
                 resetPosterSelection();
+                setMediaMeta('', '', '');
             }
 
             function validateImage(url, token) {
                 return new Promise(function(resolve) {
                     var img = new Image();
                     img.onload = function() {
-                        resolve(token === validationToken ? img.naturalWidth >= img.naturalHeight : true);
+                        resolve(token === validationToken ? {
+                            valid: true,
+                            width: img.naturalWidth,
+                            height: img.naturalHeight,
+                            kind: 'image'
+                        } : {
+                            valid: true
+                        });
                     };
                     img.onerror = function() {
-                        resolve(token === validationToken ? false : true);
+                        resolve(token === validationToken ? {
+                            valid: false
+                        } : {
+                            valid: true
+                        });
                     };
                     img.src = url;
                 });
@@ -457,19 +486,44 @@
                     video.muted = true;
                     video.playsInline = true;
                     video.onloadedmetadata = function() {
-                        resolve(token === validationToken ? video.videoWidth >= video.videoHeight : true);
+                        resolve(token === validationToken ? {
+                            valid: true,
+                            width: video.videoWidth,
+                            height: video.videoHeight,
+                            kind: 'video'
+                        } : {
+                            valid: true
+                        });
                     };
                     video.onerror = function() {
-                        resolve(token === validationToken ? false : true);
+                        resolve(token === validationToken ? {
+                            valid: false
+                        } : {
+                            valid: true
+                        });
                     };
                     video.src = url;
                 });
+            }
+
+            function validateDimensions(meta) {
+                if (!meta || !meta.valid || !meta.width || !meta.height) {
+                    return ratioMessage;
+                }
+
+                if (meta.width < 1280 || meta.height < 720) {
+                    return sizeMessage;
+                }
+
+                var ratio = meta.width / meta.height;
+                return Math.abs(ratio - (16 / 9)) > 0.02 ? ratioMessage : '';
             }
 
             function validateLaunchMedia() {
                 var currentValue = (mainVisualInput.value || '').trim();
                 if (!currentValue) {
                     lastCheckedValue = '';
+                    setMediaMeta('', '', '');
                     if (!hasLandscapeValidationError) {
                         setError('');
                     }
@@ -490,16 +544,18 @@
 
                     var isVideo = /\.(mp4|mov|webm|ogg)$/i.test(url);
                     return (isVideo ? validateVideo(url, token) : validateImage(url, token)).then(function(
-                        isLandscape) {
+                        meta) {
                         if (token !== validationToken) {
                             return;
                         }
-                        if (!isLandscape) {
+                        var dimensionError = validateDimensions(meta);
+                        if (dimensionError) {
                             clearInvalidMedia();
-                            setError(landscapeMessage);
+                            setError(dimensionError);
                             lastCheckedValue = '';
                             return;
                         }
+                        setMediaMeta(meta.width, meta.height, meta.kind);
                         setError('');
                     });
                 });

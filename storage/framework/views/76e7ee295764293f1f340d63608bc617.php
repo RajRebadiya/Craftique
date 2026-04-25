@@ -47,13 +47,18 @@
                         <div class="showcase-preview__collection-layout d-none">
                             <div class="showcase-preview__collection-main">
                                 <div class="showcase-preview__collection-slider">
-                                    <div class="showcase-preview__collection-slide"></div>
                                     <div class="showcase-preview__collection-main-meta">
                                         <div class="showcase-preview__collection-main-title"></div>
                                         <div class="showcase-preview__collection-main-by text-muted"></div>
                                         <div class="showcase-preview__collection-main-desc text-muted"></div>
                                         <div class="showcase-preview__collection-main-hashtags text-muted"></div>
-                                        <button type="button" class="showcase-preview__collection-btn">
+                                    </div>
+                                    <div class="showcase-preview__collection-slide"></div>
+                                    <div class="showcase-preview__collection-main-detail">
+                                        <div class="showcase-preview__collection-active-title"></div>
+                                        <div class="showcase-preview__collection-active-desc text-muted"></div>
+                                        <div class="showcase-preview__collection-main-product d-none"></div>
+                                        <button type="button" class="showcase-preview__collection-main-btn">
                                             <?php echo e(translate('View Collection')); ?>
 
                                         </button>
@@ -197,8 +202,6 @@
         display: none !important;
     }
 
-    .showcase-preview[data-preview-type="vitrin"]:not([data-vitrin-detail-open="1"]) .showcase-preview__title,
-    .showcase-preview[data-preview-type="vitrin"]:not([data-vitrin-detail-open="1"]) .showcase-preview__description,
     .showcase-preview[data-preview-type="vitrin"]:not([data-vitrin-detail-open="1"]) .showcase-preview__media,
     .showcase-preview[data-preview-type="vitrin"]:not([data-vitrin-detail-open="1"]) .showcase-preview__vitrin-grid {
         display: none !important;
@@ -438,7 +441,7 @@
     }
 
     .showcase-preview[data-preview-type="collection"] .showcase-preview__frame {
-        max-width: 760px;
+        max-width: 980px;
         background: transparent;
         border: none;
         box-shadow: none;
@@ -447,7 +450,7 @@
 
     .showcase-preview[data-preview-type="collection"] .showcase-preview__cards {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px;
+        gap: 16px;
     }
 
     .showcase-preview[data-preview-type="collection"] .showcase-preview__brand {
@@ -456,8 +459,8 @@
 
     .showcase-preview__collection-layout {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 18px;
+        grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+        gap: 22px;
         align-items: start;
     }
 
@@ -466,30 +469,39 @@
         width: 100%;
     }
 
+    .showcase-preview__collection-main {
+        display: flex;
+        justify-content: center;
+    }
+
     .showcase-preview__collection-slider {
         display: flex;
         flex-direction: column;
-        background: #fff;
+        width: 100%;
+        max-width: 312px;
+        background: #cfa68f;
         border-radius: 18px;
         overflow: hidden;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.04);
     }
 
     .showcase-preview__collection-slide {
         order: 2;
         position: relative;
-        height: 420px;
-        background: #f1e7df;
+        height: 330px;
+        background: transparent;
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 0 14px 14px;
     }
 
     .showcase-preview__collection-slide img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        border-radius: 14px;
     }
 
     .showcase-preview__collection-slide-nav {
@@ -521,59 +533,166 @@
 
     .showcase-preview__collection-main-meta {
         order: 1;
-        padding: 16px 18px 14px;
-        background: #fff;
-        color: #111827;
+        padding: 14px 18px 8px;
+        background: transparent;
+        color: #fff;
+        text-align: center;
     }
 
     .showcase-preview__collection-main-title {
-        font-weight: 700;
-        margin-bottom: 6px;
+        font-weight: 800;
+        font-size: 18px;
+        line-height: 1.15;
+        margin-bottom: 8px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .showcase-preview__collection-main-by {
         font-size: 12px;
         margin-bottom: 6px;
-        color: #6b7280 !important;
+        color: rgba(255, 255, 255, 0.92) !important;
     }
 
     .showcase-preview__collection-main-desc {
-        font-size: 12px;
-        margin-bottom: 6px;
-        color: #6b7280 !important;
+        font-size: 11px;
+        line-height: 1.35;
+        margin-bottom: 8px;
+        color: rgba(255, 255, 255, 0.92) !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .showcase-preview__collection-main-hashtags {
-        font-size: 12px;
-        margin-bottom: 12px;
-        color: #6b7280 !important;
+        font-size: 11px;
+        line-height: 1.3;
+        margin-bottom: 0;
+        color: rgba(255, 255, 255, 0.92) !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
-    .showcase-preview__collection-btn {
-        border: 1px solid #c7a08e;
-        background: #c7a08e;
+    .showcase-preview__collection-main-detail {
+        order: 3;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        padding: 0 18px 18px;
+        color: #fff;
+    }
+
+    .showcase-preview__collection-active-title {
+        font-size: 13px;
+        font-weight: 800;
+        text-align: center;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .showcase-preview__collection-active-desc {
+        font-size: 11px;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.9) !important;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .showcase-preview__collection-main-product {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 10px;
+        font-size: 12px;
+        color: #7a5a4b;
+    }
+
+    .showcase-preview__collection-main-product .product-row {
+        display: grid;
+        grid-template-columns: 40px 1fr auto;
+        gap: 8px 10px;
+        align-items: center;
+    }
+
+    .showcase-preview__collection-main-product .product-thumb,
+    .showcase-preview__collection-main-product .product-thumb-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: rgba(122, 90, 75, 0.12);
+        grid-row: 1 / span 2;
+    }
+
+    .showcase-preview__collection-main-product .product-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .showcase-preview__collection-main-product .product-name {
+        font-weight: 800;
+        line-height: 1.2;
+        color: #7a5a4b;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .showcase-preview__collection-main-product .product-price {
+        font-weight: 800;
+        justify-self: end;
+        color: #7a5a4b;
+    }
+
+    .showcase-preview__collection-main-product .product-icons {
+        grid-column: 3;
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        color: #7a5a4b;
+        font-size: 12px;
+    }
+
+    .showcase-preview__collection-main-btn {
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        background: rgba(255, 255, 255, 0.1);
         color: #fff;
         border-radius: 999px;
-        padding: 6px 12px;
-        font-size: 12px;
+        padding: 8px 12px;
+        font-size: 11px;
+        font-weight: 800;
+        width: 100%;
     }
 
     .showcase-preview__collection-card {
-        background: #c7a08e;
+        background: #cfa68f;
         border-radius: 16px;
         padding: 12px;
         color: #fff;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
         border: 1px solid rgba(255, 255, 255, 0.35);
-        min-height: 260px;
+        min-height: 244px;
     }
 
     .showcase-preview__collection-media {
         border-radius: 12px;
         overflow: hidden;
-        height: 150px;
+        height: 140px;
         background: rgba(255, 255, 255, 0.15);
     }
 
@@ -592,6 +711,7 @@
         border-radius: 10px;
         padding: 8px 10px;
         font-size: 12px;
+        margin-top: auto;
     }
 
     .showcase-preview__collection-footer .brand {
@@ -629,12 +749,22 @@
         background: transparent;
     }
 
+    @media (max-width: 991px) {
+        .showcase-preview__collection-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .showcase-preview__collection-slider {
+            max-width: 100%;
+        }
+    }
+
     .showcase-preview__collection-product {
         background: rgba(255, 255, 255, 0.18);
         border-radius: 10px;
-        padding: 10px;
-        font-size: 12px;
-        margin-top: 8px;
+        padding: 9px;
+        font-size: 11px;
+        margin-top: 6px;
     }
 
     .showcase-preview__collection-product .product-row {
@@ -664,11 +794,16 @@
     .showcase-preview__collection-product .product-name {
         font-weight: 700;
         line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .showcase-preview__collection-product .product-price {
         font-weight: 700;
         justify-self: end;
+        white-space: nowrap;
     }
 
     .showcase-preview__collection-product .product-cta {
@@ -681,6 +816,25 @@
         padding: 6px 10px;
         font-size: 11px;
         font-weight: 700;
+    }
+
+    .showcase-preview__card-title {
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .showcase-preview__collection-card .text-white-50.small {
+        line-height: 1.35;
+        min-height: 28px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .showcase-preview__vitrin-thumbs {
@@ -1152,6 +1306,7 @@
             viewStorefront: <?php echo json_encode(translate('View Storefront'), 15, 512) ?>,
             viewCollection: <?php echo json_encode(translate('View Collection'), 15, 512) ?>,
             addToCart: <?php echo json_encode(translate('Add to Cart'), 15, 512) ?>,
+            backToProducts: <?php echo json_encode(translate('Back to Products'), 15, 512) ?>,
             elegantTagline: <?php echo json_encode(translate('Elegant Design Luxury'), 15, 512) ?>,
             storefront: <?php echo json_encode(translate('Storefront'), 15, 512) ?>,
         };
@@ -1564,6 +1719,9 @@
                 var mainBy = preview.querySelector('.showcase-preview__collection-main-by');
                 var mainDesc = preview.querySelector('.showcase-preview__collection-main-desc');
                 var mainHashtags = preview.querySelector('.showcase-preview__collection-main-hashtags');
+                var activeTitleEl = preview.querySelector('.showcase-preview__collection-active-title');
+                var activeDescEl = preview.querySelector('.showcase-preview__collection-active-desc');
+                var mainProductEl = preview.querySelector('.showcase-preview__collection-main-product');
                 var mainSlide = preview.querySelector('.showcase-preview__collection-slide');
                 var activeIndex = Number(preview.dataset.collectionActiveIndex || 0);
                 if (activeIndex >= cardsWithImage.length) {
@@ -1599,8 +1757,43 @@
                 if (mainHashtags) {
                     mainHashtags.textContent = hashtags ? ('#' + hashtags.replace(/,\s*/g, ' #')) : '';
                 }
+                var activeCard = cardsWithImage[activeIndex] || cardsWithImage[0] || {};
+                if (activeTitleEl) {
+                    activeTitleEl.textContent = activeCard.title || 'Collection item';
+                }
+                if (activeDescEl) {
+                    activeDescEl.textContent = activeCard.desc || '';
+                }
+                if (mainProductEl) {
+                    mainProductEl.classList.toggle('d-none', !activeCard.product_id);
+                    if (!activeCard.product_id) {
+                        mainProductEl.innerHTML = '';
+                    }
+                }
+                fetchProductInfo(activeCard.product_id ? [activeCard.product_id] : []).then(function(cache) {
+                    if (!mainProductEl) {
+                        return;
+                    }
+                    var info = activeCard.product_id ? cache[String(activeCard.product_id)] : null;
+                    if (!info) {
+                        mainProductEl.classList.add('d-none');
+                        mainProductEl.innerHTML = '';
+                        return;
+                    }
+                    mainProductEl.classList.remove('d-none');
+                    var productThumb = info.thumbnail_url || (info.photo_urls && info.photo_urls.length ? info
+                        .photo_urls[0] : '');
+                    mainProductEl.innerHTML = '' +
+                        '<div class="product-row">' +
+                        (productThumb ?
+                            '<div class="product-thumb"><img src="' + productThumb + '" alt=""></div>' :
+                            '<div class="product-thumb-placeholder"></div>') +
+                        '<div class="product-name">' + (info.name || activeCard.product_name || '') + '</div>' +
+                        '<div class="product-price">' + (info.price_html || '') + '</div>' +
+                        '<div class="product-icons"><span>&#x21AA;</span><span>&lt;/&gt;</span></div>' +
+                        '</div>';
+                });
                 if (mainSlide) {
-                    var activeCard = cardsWithImage[activeIndex] || cardsWithImage[0] || {};
                     var activeImageValue = activeCard.image || '';
                     resolveFileUrl(activeImageValue).then(function(coverUrl) {
                         if (!coverUrl) {
@@ -1677,6 +1870,8 @@
                 description: descriptionValue,
                 hashtags: hashtags,
                 media: mediaValue,
+                vitrinDetailOpen: preview.dataset.vitrinDetailOpen || '0',
+                vitrinOverlayOpen: preview.dataset.vitrinOverlayOpen || '0',
                 product: getSelectedProductName(scope),
                 products: getSelectedProducts(scope),
                 intro: introValue,
@@ -1947,15 +2142,6 @@
             }
 
             if (type === 'vitrin') {
-                if (titleEl) {
-                    titleEl.textContent = titleValue || T.storefront;
-                }
-                if (subtitleEl) subtitleEl.textContent = '';
-                if (cta) {
-                    cta.textContent = T.viewStorefront;
-                    cta.style.display = 'none';
-                }
-
                 var selectedInputs = Array.from(scope.querySelectorAll(
                     'input[name=\"product_ids[]\"]:checked, .js-showcase-product:checked'));
                 var selectedIds = selectedInputs
@@ -1970,6 +2156,25 @@
                     preview.dataset.vitrinSelectionKey = vitrinSelectionKey;
                     preview.dataset.vitrinDetailOpen = '0';
                     preview.dataset.vitrinOverlayOpen = '0';
+                }
+                var isVitrinDetailOpen = preview.dataset.vitrinDetailOpen === '1';
+                if (titleEl) {
+                    if (isVitrinDetailOpen) {
+                        titleEl.innerHTML =
+                            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                            '<button type="button" class="btn btn-sm btn-light border js-vitrin-back-btn" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;">' +
+                            T.backToProducts +
+                            '</button>' +
+                            '<span>' + (titleValue || T.storefront) + '</span>' +
+                            '</div>';
+                    } else {
+                        titleEl.textContent = titleValue || T.storefront;
+                    }
+                }
+                if (subtitleEl) subtitleEl.textContent = '';
+                if (cta) {
+                    cta.textContent = T.viewStorefront;
+                    cta.style.display = 'none';
                 }
                 var selectedFallbackInfos = selectedInputs.map(function(input) {
                     var label = input.closest('label');
@@ -2046,6 +2251,14 @@
                 renderVitrinItems(selectedFallbackInfos);
 
                 fetchProductInfo(selectedIds).then(function(cache) {
+                    var inlineBackBtn = titleEl ? titleEl.querySelector('.js-vitrin-back-btn') : null;
+                    if (inlineBackBtn) {
+                        inlineBackBtn.onclick = function() {
+                            preview.dataset.vitrinDetailOpen = '0';
+                            preview.dataset.vitrinOverlayOpen = '0';
+                            updatePreview(preview);
+                        };
+                    }
                     var infos = selectedIds
                         .map(function(id) {
                             var apiInfo = cache[String(id)];

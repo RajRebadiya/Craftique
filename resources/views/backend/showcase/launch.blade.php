@@ -52,7 +52,8 @@
                             </p>
                             <ul class="mb-0 pl-3 text-muted">
                                 <li>Title is required in at least one language.</li>
-                                <li>Main visual is the primary asset.</li>
+                                <li>Main visual must use a 16:9 HD landscape ratio.</li>
+                                <li>Recommended sizes: 1280 x 720 or 1920 x 1080.</li>
                                 <li>Cover image is optional and acts as preview / fallback.</li>
                                 <li>Three words appear as the launch tagline.</li>
                                 <li>Exactly one product should be linked.</li>
@@ -194,11 +195,18 @@
                                         class="selected-files"
                                         value="{{ $mainVisual }}"
                                     >
+                                    <input type="hidden" name="launch_media_width" value="{{ old('launch_media_width') }}">
+                                    <input type="hidden" name="launch_media_height" value="{{ old('launch_media_height') }}">
+                                    <input type="hidden" name="launch_media_kind" value="{{ old('launch_media_kind') }}">
                                 </div>
                                 <div class="file-preview box sm"></div>
                                 @error('main_visual')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
+                                <small class="text-muted d-block mt-2">
+                                    Expected ratio: 16:9 landscape only. Minimum 1280 x 720, recommended 1920 x 1080.
+                                </small>
+                                <small class="text-danger d-block mt-2 launch-media-error" style="display:none;"></small>
                             </div>
 
                             <div class="form-group">
@@ -252,4 +260,237 @@
         </div>
     </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.querySelector('form[action="{{ route('showcase.launch.store') }}"]');
+    if (!form) {
+        return;
+    }
+
+    var mainVisualInput = form.querySelector('input[name="main_visual"]');
+    var coverInput = form.querySelector('input[name="cover_image"]');
+    var mediaWidthInput = form.querySelector('input[name="launch_media_width"]');
+    var mediaHeightInput = form.querySelector('input[name="launch_media_height"]');
+    var mediaKindInput = form.querySelector('input[name="launch_media_kind"]');
+    var mediaError = form.querySelector('.launch-media-error');
+    var lastCheckedValue = null;
+    var validationToken = 0;
+    var hasLandscapeValidationError = false;
+    var ratioMessage = 'Launch main visual must use a 16:9 landscape ratio such as 1280x720 or 1920x1080.';
+    var sizeMessage = 'Launch main visual must be at least 1280x720.';
+
+    if (!mainVisualInput) {
+        return;
+    }
+
+    function isUrl(value) {
+        return /^https?:\/\//i.test(value) || /^\/|^data:/i.test(value);
+    }
+
+    function getAppUrl() {
+        if (window.AIZ && AIZ.data && AIZ.data.appUrl) {
+            return AIZ.data.appUrl;
+        }
+        var meta = document.querySelector('meta[name="app-url"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function getCsrfToken() {
+        if (window.AIZ && AIZ.data && AIZ.data.csrf) {
+            return AIZ.data.csrf;
+        }
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function fetchFileInfo(ids) {
+        if (typeof $ === 'undefined') {
+            return Promise.resolve([]);
+        }
+
+        var appUrl = getAppUrl();
+        if (!appUrl) {
+            return Promise.resolve([]);
+        }
+
+        return new Promise(function(resolve) {
+            $.post(
+                appUrl.replace(/\/$/, '') + "/aiz-uploader/get_file_by_ids",
+                {
+                    _token: getCsrfToken(),
+                    ids: ids
+                },
+                function(data) {
+                    resolve(Array.isArray(data) ? data : []);
+                }
+            ).fail(function() {
+                resolve([]);
+            });
+        });
+    }
+
+    function normalizeFileUrl(file) {
+        if (!file) {
+            return null;
+        }
+        var url = file.file_url || file.file_name || file.file_path || file.file;
+        if (!url) {
+            return null;
+        }
+        if (isUrl(url)) {
+            return url;
+        }
+        var appUrl = getAppUrl();
+        if (appUrl) {
+            return appUrl.replace(/\/$/, '') + '/' + String(url).replace(/^\//, '');
+        }
+        return url;
+    }
+
+    function resolveMediaUrl(value) {
+        if (!value) {
+            return Promise.resolve(null);
+        }
+
+        if (isUrl(value)) {
+            return Promise.resolve(value);
+        }
+
+        var firstId = String(value).split(',')[0].trim();
+        if (!firstId) {
+            return Promise.resolve(null);
+        }
+
+        if (/\/|\.|uploads/i.test(firstId)) {
+            return Promise.resolve(normalizeFileUrl({ file_name: firstId }));
+        }
+
+        return fetchFileInfo(firstId).then(function(files) {
+            return files.length ? normalizeFileUrl(files[0]) : null;
+        });
+    }
+
+    function setError(message) {
+        if (!mediaError) {
+            return;
+        }
+        mediaError.textContent = message || '';
+        mediaError.style.display = message ? 'block' : 'none';
+        hasLandscapeValidationError = !!message;
+    }
+
+    function setMediaMeta(width, height, kind) {
+        if (mediaWidthInput) mediaWidthInput.value = width || '';
+        if (mediaHeightInput) mediaHeightInput.value = height || '';
+        if (mediaKindInput) mediaKindInput.value = kind || '';
+    }
+
+    function clearUploaderPreview(input) {
+        if (!input) {
+            return;
+        }
+        input.value = '';
+        var previewBox = input.closest('.input-group') ? input.closest('.input-group').nextElementSibling : null;
+        if (previewBox && previewBox.classList.contains('file-preview')) {
+            previewBox.innerHTML = '';
+        }
+    }
+
+    function clearInvalidMedia() {
+        clearUploaderPreview(mainVisualInput);
+        if (coverInput) {
+            clearUploaderPreview(coverInput);
+        }
+        setMediaMeta('', '', '');
+    }
+
+    function validateImage(url, token) {
+        return new Promise(function(resolve) {
+            var img = new Image();
+            img.onload = function() {
+                resolve(token === validationToken ? { valid: true, width: img.naturalWidth, height: img.naturalHeight, kind: 'image' } : { valid: true });
+            };
+            img.onerror = function() {
+                resolve(token === validationToken ? { valid: false } : { valid: true });
+            };
+            img.src = url;
+        });
+    }
+
+    function validateVideo(url, token) {
+        return new Promise(function(resolve) {
+            var video = document.createElement('video');
+            video.preload = 'metadata';
+            video.muted = true;
+            video.playsInline = true;
+            video.onloadedmetadata = function() {
+                resolve(token === validationToken ? { valid: true, width: video.videoWidth, height: video.videoHeight, kind: 'video' } : { valid: true });
+            };
+            video.onerror = function() {
+                resolve(token === validationToken ? { valid: false } : { valid: true });
+            };
+            video.src = url;
+        });
+    }
+
+    function validateDimensions(meta) {
+        if (!meta || !meta.valid || !meta.width || !meta.height) {
+            return ratioMessage;
+        }
+        if (meta.width < 1280 || meta.height < 720) {
+            return sizeMessage;
+        }
+        var ratio = meta.width / meta.height;
+        return Math.abs(ratio - (16 / 9)) > 0.02 ? ratioMessage : '';
+    }
+
+    function validateLaunchMedia() {
+        var currentValue = (mainVisualInput.value || '').trim();
+        if (!currentValue) {
+            lastCheckedValue = '';
+            setMediaMeta('', '', '');
+            if (!hasLandscapeValidationError) {
+                setError('');
+            }
+            return;
+        }
+        if (currentValue === lastCheckedValue) {
+            return;
+        }
+
+        lastCheckedValue = currentValue;
+        validationToken += 1;
+        var token = validationToken;
+
+        resolveMediaUrl(currentValue).then(function(url) {
+            if (token !== validationToken || !url) {
+                return;
+            }
+
+            var isVideo = /\.(mp4|mov|webm|ogg)$/i.test(url);
+            return (isVideo ? validateVideo(url, token) : validateImage(url, token)).then(function(meta) {
+                if (token !== validationToken) {
+                    return;
+                }
+
+                var dimensionError = validateDimensions(meta);
+                if (dimensionError) {
+                    clearInvalidMedia();
+                    setError(dimensionError);
+                    lastCheckedValue = '';
+                    return;
+                }
+
+                setMediaMeta(meta.width, meta.height, meta.kind);
+                setError('');
+            });
+        });
+    }
+
+    mainVisualInput.addEventListener('change', validateLaunchMedia);
+    setInterval(validateLaunchMedia, 1200);
+    validateLaunchMedia();
+});
+</script>
 @endsection

@@ -43,7 +43,8 @@
             <ul class="mb-0 pl-3 text-muted">
                 <li><?php echo e(translate('Title is required in at least one language.')); ?></li>
                 <li><?php echo e(translate('Subtitle is used for the three-word tagline shown in the preview.')); ?></li>
-                <li><?php echo e(translate('Main visual is the primary media for the Launch.')); ?></li>
+                <li><?php echo e(translate('Main visual must use a 16:9 HD landscape ratio.')); ?></li>
+                <li><?php echo e(translate('Recommended sizes: 1280x720 or 1920x1080.')); ?></li>
                 <li><?php echo e(translate('If you upload a video, you can pick a poster from suggested frames, choose a frame manually, or upload an image.')); ?></li>
                 <li><?php echo e(translate('One product should be linked to the Launch.')); ?></li>
                 <li><?php echo e(translate('Hashtags help the feed and search experience.')); ?></li>
@@ -141,6 +142,37 @@ unset($__errorArgs, $__bag); ?>
 
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header">
+                        <h5 class="mb-0 h6"><?php echo e(translate('Product Selection')); ?></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group row mb-0">
+                            <label class="col-lg-2 col-form-label"><?php echo e(translate('Product')); ?></label>
+                            <div class="col-lg-10">
+                                <select name="product_id" class="form-control aiz-selectpicker" data-live-search="true">
+                                    <option value=""><?php echo e(translate('Select One')); ?></option>
+                                    <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($product->id); ?>" <?php echo e((string) $selectedProductId === (string) $product->id ? 'selected' : ''); ?>>
+                                            <?php echo e($product->name); ?> (#<?php echo e($product->id); ?>)
+                                        </option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                                <?php $__errorArgs = ['product_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <small class="text-danger d-block mt-1"><?php echo e($message); ?></small>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header">
                         <h5 class="mb-0 h6"><?php echo e(translate('Launch Media')); ?></h5>
                     </div>
                     <div class="card-body">
@@ -153,6 +185,9 @@ unset($__errorArgs, $__bag); ?>
                                     </div>
                                     <div class="form-control file-amount"><?php echo e(translate('Choose Image or Video')); ?></div>
                                     <input type="hidden" name="main_visual" class="selected-files story-video-input" value="<?php echo e($mainVisual); ?>">
+                                    <input type="hidden" name="launch_media_width" value="<?php echo e(old('launch_media_width')); ?>">
+                                    <input type="hidden" name="launch_media_height" value="<?php echo e(old('launch_media_height')); ?>">
+                                    <input type="hidden" name="launch_media_kind" value="<?php echo e(old('launch_media_kind')); ?>">
                                 </div>
                                 <div class="file-preview box sm"></div>
 
@@ -166,6 +201,11 @@ $message = $__bag->first($__errorArgs[0]); ?>
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
+                                <small class="text-muted d-block mt-2">
+                                    <?php echo e(translate('Expected ratio: 16:9 landscape only. Minimum 1280x720, recommended 1920x1080.')); ?>
+
+                                </small>
+                                <small class="text-danger d-block mt-2 launch-media-error" style="display:none;"></small>
                             </div>
                         </div>
 
@@ -247,37 +287,6 @@ unset($__errorArgs, $__bag); ?>
 
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0 h6"><?php echo e(translate('Product Selection')); ?></h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group row mb-0">
-                            <label class="col-lg-2 col-form-label"><?php echo e(translate('Product')); ?></label>
-                            <div class="col-lg-10">
-                                <select name="product_id" class="form-control aiz-selectpicker" data-live-search="true">
-                                    <option value=""><?php echo e(translate('Select One')); ?></option>
-                                    <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                        <option value="<?php echo e($product->id); ?>" <?php echo e((string) $selectedProductId === (string) $product->id ? 'selected' : ''); ?>>
-                                            <?php echo e($product->name); ?> (#<?php echo e($product->id); ?>)
-                                        </option>
-                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                </select>
-                                <?php $__errorArgs = ['product_id'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?>
-                                    <small class="text-danger d-block mt-1"><?php echo e($message); ?></small>
-                                <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header">
                         <h5 class="mb-0 h6"><?php echo e(translate('Publishing')); ?></h5>
                     </div>
                     <div class="card-body">
@@ -314,6 +323,277 @@ unset($__errorArgs, $__bag); ?>
     </form>
 
     <?php echo $__env->make('partials.story_poster_script', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var form = document.querySelector('form[action="<?php echo e($formAction); ?>"]');
+            if (!form) {
+                return;
+            }
+
+            var mainVisualInput = form.querySelector('input[name="main_visual"]');
+            var coverInput = form.querySelector('input[name="cover_image"]');
+            var posterDataInput = form.querySelector('input[name="poster_image_data"]');
+            var mediaWidthInput = form.querySelector('input[name="launch_media_width"]');
+            var mediaHeightInput = form.querySelector('input[name="launch_media_height"]');
+            var mediaKindInput = form.querySelector('input[name="launch_media_kind"]');
+            var mediaError = form.querySelector('.launch-media-error');
+            var selectedPreview = form.querySelector('.story-selected-preview');
+            var lastCheckedValue = null;
+            var validationToken = 0;
+            var hasLandscapeValidationError = false;
+            var ratioMessage = <?php echo json_encode(translate('Launch main visual must use a 16:9 landscape ratio such as 1280x720 or 1920x1080.'), 15, 512) ?>;
+            var sizeMessage = <?php echo json_encode(translate('Launch main visual must be at least 1280x720.'), 15, 512) ?>;
+
+            if (!mainVisualInput) {
+                return;
+            }
+
+            function isUrl(value) {
+                return /^https?:\/\//i.test(value) || /^\/|^data:/i.test(value);
+            }
+
+            function getAppUrl() {
+                if (window.AIZ && AIZ.data && AIZ.data.appUrl) {
+                    return AIZ.data.appUrl;
+                }
+                var meta = document.querySelector('meta[name="app-url"]');
+                return meta ? meta.getAttribute('content') : '';
+            }
+
+            function getCsrfToken() {
+                if (window.AIZ && AIZ.data && AIZ.data.csrf) {
+                    return AIZ.data.csrf;
+                }
+                var meta = document.querySelector('meta[name="csrf-token"]');
+                return meta ? meta.getAttribute('content') : '';
+            }
+
+            function fetchFileInfo(ids) {
+                if (typeof $ === 'undefined') {
+                    return Promise.resolve([]);
+                }
+
+                var appUrl = getAppUrl();
+                if (!appUrl) {
+                    return Promise.resolve([]);
+                }
+
+                return new Promise(function(resolve) {
+                    $.post(
+                        appUrl.replace(/\/$/, '') + "/aiz-uploader/get_file_by_ids",
+                        {
+                            _token: getCsrfToken(),
+                            ids: ids
+                        },
+                        function(data) {
+                            resolve(Array.isArray(data) ? data : []);
+                        }
+                    ).fail(function() {
+                        resolve([]);
+                    });
+                });
+            }
+
+            function normalizeFileUrl(file) {
+                if (!file) {
+                    return null;
+                }
+                var url = file.file_url || file.file_name || file.file_path || file.file;
+                if (!url) {
+                    return null;
+                }
+                if (isUrl(url)) {
+                    return url;
+                }
+                var appUrl = getAppUrl();
+                if (appUrl) {
+                    return appUrl.replace(/\/$/, '') + '/' + String(url).replace(/^\//, '');
+                }
+                return url;
+            }
+
+            function resolveMediaUrl(value) {
+                if (!value) {
+                    return Promise.resolve(null);
+                }
+
+                if (isUrl(value)) {
+                    return Promise.resolve(value);
+                }
+
+                var firstId = String(value).split(',')[0].trim();
+                if (!firstId) {
+                    return Promise.resolve(null);
+                }
+
+                if (/\/|\.|uploads/i.test(firstId)) {
+                    return Promise.resolve(normalizeFileUrl({
+                        file_name: firstId
+                    }));
+                }
+
+                return fetchFileInfo(firstId).then(function(files) {
+                    return files.length ? normalizeFileUrl(files[0]) : null;
+                });
+            }
+
+            function setError(message) {
+                if (!mediaError) {
+                    return;
+                }
+                mediaError.textContent = message || '';
+                mediaError.style.display = message ? 'block' : 'none';
+                hasLandscapeValidationError = !!message;
+            }
+
+            function setMediaMeta(width, height, kind) {
+                if (mediaWidthInput) mediaWidthInput.value = width || '';
+                if (mediaHeightInput) mediaHeightInput.value = height || '';
+                if (mediaKindInput) mediaKindInput.value = kind || '';
+            }
+
+            function clearUploaderPreview(input) {
+                if (!input) {
+                    return;
+                }
+                input.value = '';
+                var previewBox = input.closest('.input-group') ? input.closest('.input-group').nextElementSibling : null;
+                if (previewBox && previewBox.classList.contains('file-preview')) {
+                    previewBox.innerHTML = '';
+                }
+            }
+
+            function resetPosterSelection() {
+                if (posterDataInput) {
+                    posterDataInput.value = '';
+                }
+                if (coverInput) {
+                    clearUploaderPreview(coverInput);
+                }
+                if (selectedPreview) {
+                    selectedPreview.innerHTML =
+                        '<div class="text-muted small"><?php echo e(translate("No poster selected yet.")); ?></div>';
+                }
+            }
+
+            function clearInvalidMedia() {
+                clearUploaderPreview(mainVisualInput);
+                resetPosterSelection();
+                setMediaMeta('', '', '');
+            }
+
+            function validateImage(url, token) {
+                return new Promise(function(resolve) {
+                    var img = new Image();
+                    img.onload = function() {
+                        resolve(token === validationToken ? {
+                            valid: true,
+                            width: img.naturalWidth,
+                            height: img.naturalHeight,
+                            kind: 'image'
+                        } : {
+                            valid: true
+                        });
+                    };
+                    img.onerror = function() {
+                        resolve(token === validationToken ? {
+                            valid: false
+                        } : {
+                            valid: true
+                        });
+                    };
+                    img.src = url;
+                });
+            }
+
+            function validateVideo(url, token) {
+                return new Promise(function(resolve) {
+                    var video = document.createElement('video');
+                    video.preload = 'metadata';
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.onloadedmetadata = function() {
+                        resolve(token === validationToken ? {
+                            valid: true,
+                            width: video.videoWidth,
+                            height: video.videoHeight,
+                            kind: 'video'
+                        } : {
+                            valid: true
+                        });
+                    };
+                    video.onerror = function() {
+                        resolve(token === validationToken ? {
+                            valid: false
+                        } : {
+                            valid: true
+                        });
+                    };
+                    video.src = url;
+                });
+            }
+
+            function validateDimensions(meta) {
+                if (!meta || !meta.valid || !meta.width || !meta.height) {
+                    return ratioMessage;
+                }
+
+                if (meta.width < 1280 || meta.height < 720) {
+                    return sizeMessage;
+                }
+
+                var ratio = meta.width / meta.height;
+                return Math.abs(ratio - (16 / 9)) > 0.02 ? ratioMessage : '';
+            }
+
+            function validateLaunchMedia() {
+                var currentValue = (mainVisualInput.value || '').trim();
+                if (!currentValue) {
+                    lastCheckedValue = '';
+                    setMediaMeta('', '', '');
+                    if (!hasLandscapeValidationError) {
+                        setError('');
+                    }
+                    return;
+                }
+                if (currentValue === lastCheckedValue) {
+                    return;
+                }
+
+                lastCheckedValue = currentValue;
+                validationToken += 1;
+                var token = validationToken;
+
+                resolveMediaUrl(currentValue).then(function(url) {
+                    if (token !== validationToken || !url) {
+                        return;
+                    }
+
+                    var isVideo = /\.(mp4|mov|webm|ogg)$/i.test(url);
+                    return (isVideo ? validateVideo(url, token) : validateImage(url, token)).then(function(
+                        meta) {
+                        if (token !== validationToken) {
+                            return;
+                        }
+                        var dimensionError = validateDimensions(meta);
+                        if (dimensionError) {
+                            clearInvalidMedia();
+                            setError(dimensionError);
+                            lastCheckedValue = '';
+                            return;
+                        }
+                        setMediaMeta(meta.width, meta.height, meta.kind);
+                        setError('');
+                    });
+                });
+            }
+
+            mainVisualInput.addEventListener('change', validateLaunchMedia);
+            setInterval(validateLaunchMedia, 1200);
+            validateLaunchMedia();
+        });
+    </script>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('seller.layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\laragon\www\Murli_Devlopment\resources\views/seller/showcase/launch/form.blade.php ENDPATH**/ ?>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Seller;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Seller\Concerns\EnforcesShowcasePackageLimits;
 use App\Models\Showcase;
+use App\Models\Upload;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -111,6 +112,14 @@ class ShowcaseLaunchController extends Controller
                 ]);
         }
 
+        if ($launchMediaError = $this->validateLaunchMediaRequirements($request, $validated['main_visual'])) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'main_visual' => $launchMediaError,
+                ]);
+        }
+
         $saveData = [
             'seller_id'      => $shop->id,
             'type'           => 'launch',
@@ -189,6 +198,14 @@ class ShowcaseLaunchController extends Controller
                 ->withInput()
                 ->withErrors([
                     'main_visual' => translate('Please upload the main Launch media.'),
+                ]);
+        }
+
+        if ($launchMediaError = $this->validateLaunchMediaRequirements($request, $mainVisual)) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'main_visual' => $launchMediaError,
                 ]);
         }
 
@@ -309,6 +326,78 @@ class ShowcaseLaunchController extends Controller
                 'updated_at'  => now(),
             ],
         ]);
+    }
+
+    private function validateLaunchMediaRequirements(Request $request, $mediaValue): ?string
+    {
+        [$width, $height] = $this->resolveLaunchMediaDimensions($request, $mediaValue);
+
+        if (empty($width) || empty($height)) {
+            return translate('Launch main visual must use a 16:9 HD landscape ratio such as 1280x720 or 1920x1080.');
+        }
+
+        if ((int) $width < 1280 || (int) $height < 720) {
+            return translate('Launch main visual must be at least 1280x720 in a 16:9 landscape ratio.');
+        }
+
+        $ratio = (float) $width / max(1, (float) $height);
+        if (abs($ratio - (16 / 9)) > 0.02) {
+            return translate('Launch main visual must use a 16:9 HD landscape ratio such as 1280x720 or 1920x1080.');
+        }
+
+        return null;
+    }
+
+    private function resolveLaunchMediaDimensions(Request $request, $mediaValue): array
+    {
+        $width = (int) $request->input('launch_media_width');
+        $height = (int) $request->input('launch_media_height');
+
+        if ($width > 0 && $height > 0) {
+            return [$width, $height];
+        }
+
+        return $this->getMediaImageDimensions($mediaValue);
+    }
+
+    private function getMediaImageDimensions($mediaValue): array
+    {
+        $filePath = $this->resolveMediaFilePath($mediaValue);
+        if (empty($filePath) || !is_file($filePath)) {
+            return [null, null];
+        }
+
+        $imageSize = @getimagesize($filePath);
+        if (!$imageSize || empty($imageSize[0]) || empty($imageSize[1])) {
+            return [null, null];
+        }
+
+        return [(int) $imageSize[0], (int) $imageSize[1]];
+    }
+
+    private function resolveMediaFilePath($mediaValue): ?string
+    {
+        $value = trim((string) $mediaValue);
+        if ($value === '') {
+            return null;
+        }
+
+        $parts = explode(',', $value);
+        $first = trim((string) ($parts[0] ?? ''));
+        if ($first === '') {
+            return null;
+        }
+
+        if (is_numeric($first)) {
+            $upload = Upload::find((int) $first);
+            $first = $upload?->file_name ?: '';
+        }
+
+        if ($first === '' || filter_var($first, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        return public_path(ltrim(str_replace('\\', '/', $first), '/'));
     }
 
     private function ensureActivePackage()

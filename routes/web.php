@@ -525,6 +525,10 @@ Route::controller(BlogController::class)->group(function () {
 Route::controller(\App\Http\Controllers\FrontendShowcaseController::class)->group(function () {
     Route::get('/showcase', 'index')->name('frontend.showcase.index');
     Route::get('/showcase/brand/{slug}', 'brand')->name('frontend.showcase.brand');
+    Route::get('/showcase/story', 'storyPage')->name('frontend.showcase.story_page');
+    Route::get('/showcase/collection-page', 'collectionPage')->name('frontend.showcase.collection_page');
+    Route::get('/showcase/storefront-page', 'storefrontPage')->name('frontend.showcase.storefront_page');
+    Route::get('/showcase/launch-page', 'launchPage')->name('frontend.showcase.launch_page');
     Route::get('/showcase/history', 'history')->name('frontend.showcase.history');
     Route::get('/showcase/collection', 'collection')->name('frontend.showcase.collection');
     Route::get('/showcase/vitrin', 'vitrin')->name('frontend.showcase.vitrin');
